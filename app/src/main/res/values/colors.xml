@@ -10,11 +10,16 @@
     <!-- Green palette -->
     <color name="green">#4CAF50</color>
     <color name="green_light">#C8E6C9</color>
+    <color name="nav_blue">#2196F3</color>
+    <color name="nav_item_tint">#FFFFFF</color>  <!-- trắng cho icon/text -->
 
     <color name="colorBackground">#F5F5F5</color>
     <color name="colorPrimaryDark">#3700B3</color>
     <color name="colorPrimary1">#6200EE</color> <!-- Màu nền chính của nút -->
     <color name="colorButtonPressed">#3700B3</color> <!-- Màu khi bấm vào nút -->
+    <color name="blue_800">#0D47A1</color>
+
+
 
 
 </resources>

@@ -1,42 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- Nhóm chính, chỉ chọn 1 item tại một thời điểm -->
     <group android:checkableBehavior="single">
 
         <item
-            android:id="@+id/nav_dashboard"
-            android:title="Trang chủ" />
+            android:id="@+id/nav_terminal"
+            android:title="Terminal" />
 
         <item
-            android:id="@+id/nav_control"
-            android:title="Điều khiển" />
+            android:id="@+id/nav_device"
+            android:title="Device" />
 
         <item
-            android:id="@+id/nav_schedule"
-            android:title="Lịch trình" />
+            android:id="@+id/nav_setting"
+            android:title="Setting" />
 
         <item
-            android:id="@+id/nav_alerts"
-            android:title="Cảnh báo" />
-
-        <item
-            android:id="@+id/nav_reports"
-            android:title="Báo cáo" />
+            android:id="@+id/nav_info"
+            android:title="Info" />
 
     </group>
-
-    <!-- Các mục phụ -->
-    <item
-        android:id="@+id/nav_settings"
-        android:title="Cài đặt" />
-
-    <item
-        android:id="@+id/nav_help"
-        android:title="Trợ giúp" />
-
-    <item
-        android:id="@+id/nav_logout"
-        android:title="Đăng xuất" />
 
 </menu>

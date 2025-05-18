@@ -17,69 +17,125 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-            app:menu="@menu/navigationview_menu"/>
+            android:background="@color/blue_800"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
-        <!-- Dãy nút preset M1…M7 -->
+        <!-- 1. RecyclerView hiển thị lịch sử tin nhắn đã gửi -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_messages"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:clipToPadding="false"/>
+
         <HorizontalScrollView
             android:layout_width="match_parent"
-            android:layout_height="110dp"
-            android:padding="8dp">
+            android:layout_height="wrap_content"
+            android:padding="4dp">
 
             <LinearLayout
                 android:id="@+id/preset_buttons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-                <!-- Ví dụ 7 nút, bạn có thể generate động bằng code -->
-                <Button
+                <!-- 7 nút 75×50dp vuông góc, text canh giữa -->
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_m1"
-                    style="@style/Widget.AppCompat.Button.Borderless"
+                    android:layout_width="75dp"
+                    android:layout_height="50dp"
                     android:layout_marginEnd="4dp"
-                    android:text="M1" />
+                    android:text="M1"
+                    android:textSize="10sp"
+                    android:textColor="@android:color/white"
+                    android:gravity="center"
+                    app:backgroundTint="@color/green"
+                    app:cornerRadius="0dp"
+                    app:strokeWidth="0dp" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_m2"
-                    style="@style/Widget.AppCompat.Button.Borderless"
+                    android:layout_width="75dp"
+                    android:layout_height="50dp"
                     android:layout_marginEnd="4dp"
-                    android:text="M2" />
+                    android:text="M2"
+                    android:textSize="10sp"
+                    android:textColor="@android:color/white"
+                    android:gravity="center"
+                    app:backgroundTint="@color/green"
+                    app:cornerRadius="0dp"
+                    app:strokeWidth="0dp" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_m3"
-                    style="@style/Widget.AppCompat.Button.Borderless"
+                    android:layout_width="75dp"
+                    android:layout_height="50dp"
                     android:layout_marginEnd="4dp"
-                    android:text="M3" />
+                    android:text="M3"
+                    android:textSize="10sp"
+                    android:textColor="@android:color/white"
+                    android:gravity="center"
+                    app:backgroundTint="@color/green"
+                    app:cornerRadius="0dp"
+                    app:strokeWidth="0dp" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_m4"
-                    style="@style/Widget.AppCompat.Button.Borderless"
+                    android:layout_width="75dp"
+                    android:layout_height="50dp"
                     android:layout_marginEnd="4dp"
-                    android:text="M4" />
+                    android:text="M4"
+                    android:textSize="10sp"
+                    android:textColor="@android:color/white"
+                    android:gravity="center"
+                    app:backgroundTint="@color/green"
+                    app:cornerRadius="0dp"
+                    app:strokeWidth="0dp" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_m5"
-                    style="@style/Widget.AppCompat.Button.Borderless"
+                    android:layout_width="75dp"
+                    android:layout_height="50dp"
                     android:layout_marginEnd="4dp"
-                    android:text="M5" />
+                    android:text="M5"
+                    android:textSize="10sp"
+                    android:textColor="@android:color/white"
+                    android:gravity="center"
+                    app:backgroundTint="@color/green"
+                    app:cornerRadius="0dp"
+                    app:strokeWidth="0dp" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_m6"
-                    style="@style/Widget.AppCompat.Button.Borderless"
+                    android:layout_width="75dp"
+                    android:layout_height="50dp"
                     android:layout_marginEnd="4dp"
-                    android:text="M6" />
-                <!-- … tương tự M3, M4, M5, M6, M7 -->
+                    android:text="M6"
+                    android:textSize="10sp"
+                    android:textColor="@android:color/white"
+                    android:gravity="center"
+                    app:backgroundTint="@color/green"
+                    app:cornerRadius="0dp"
+                    app:strokeWidth="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_m7"
+                    android:layout_width="75dp"
+                    android:layout_height="50dp"
+                    android:text="M7"
+                    android:textSize="10sp"
+                    android:textColor="@android:color/white"
+                    android:gravity="center"
+                    app:backgroundTint="@color/green"
+                    app:cornerRadius="0dp"
+                    app:strokeWidth="0dp" />
             </LinearLayout>
         </HorizontalScrollView>
 
+
         <!-- Container để hiển thị ô chỉnh sửa nội dung preset -->
-        <FrameLayout
-            android:id="@+id/preset_container"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:padding="16dp"/>
         <!-- Khi bấm M1…M7, inflate một layout con vào đây để edit -->
 
         <!-- Thanh nhập tin nhắn -->
@@ -114,6 +170,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Send"/>
         </LinearLayout>
+
     </LinearLayout>
 
     <!-- Navigation drawer -->
@@ -124,4 +181,5 @@
         android:layout_gravity="start"
         app:headerLayout="@layout/nav_header"
         app:menu="@menu/navigationview_menu"/>
+
 </androidx.drawerlayout.widget.DrawerLayout>

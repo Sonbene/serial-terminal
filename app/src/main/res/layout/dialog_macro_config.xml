@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Name -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Name" />
+
+        <EditText
+            android:id="@+id/et_macro_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Macro name" />
+
+        <!-- Value -->
+        <TextView
+            android:layout_marginTop="8dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Value" />
+
+        <EditText
+            android:id="@+id/et_macro_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter text to send" />
+
+        <!-- Edit mode -->
+        <TextView
+            android:layout_marginTop="8dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Edit mode" />
+
+        <RadioGroup
+            android:id="@+id/rg_edit_mode"
+            android:layout_width="255dp"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                android:id="@+id/rb_mode_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Text" />
+
+            <RadioButton
+                android:id="@+id/rb_mode_hex"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HEX" />
+
+            <RadioButton
+                android:id="@+id/rb_mode_multiline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Multiline" />
+        </RadioGroup>
+
+        <!-- Action -->
+        <TextView
+            android:layout_marginTop="8dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Action" />
+
+        <RadioGroup
+            android:id="@+id/rg_action"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <RadioButton
+                android:id="@+id/rb_action_send"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Send"/>
+            <RadioButton
+                android:id="@+id/rb_action_insert"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Insert"/>
+        </RadioGroup>
+
+        <!-- Repeat -->
+        <CheckBox
+            android:id="@+id/cb_repeat"
+            android:layout_marginTop="8dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Repeat" />
+
+    </LinearLayout>
+</ScrollView>
