@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="colorPrimary">#3F51B5</color>
+    <!-- Gray palette -->
+    <color name="gray">#9E9E9E</color>
+    <color name="gray_light">#E0E0E0</color>
+
+    <!-- Green palette -->
+    <color name="green">#4CAF50</color>
+    <color name="green_light">#C8E6C9</color>
+
+    <color name="colorBackground">#F5F5F5</color>
+    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorPrimary1">#6200EE</color> <!-- Màu nền chính của nút -->
+    <color name="colorButtonPressed">#3700B3</color> <!-- Màu khi bấm vào nút -->
+
+
+</resources>
