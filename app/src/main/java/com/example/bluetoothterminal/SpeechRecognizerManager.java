@@ -82,6 +82,7 @@ public class SpeechRecognizerManager {
             }
 
 
+
             @Override public void onResults(Bundle results) {
                 isListening = false;
                 ArrayList<String> matches =
@@ -91,6 +92,7 @@ public class SpeechRecognizerManager {
                 } else {
                     callback.onError("Kết quả trống");
                 }
+
             }
             public void onPartialResults(Bundle partialResults) {
                 ArrayList<String> partial = partialResults.getStringArrayList(
@@ -116,6 +118,11 @@ public class SpeechRecognizerManager {
 
         // Sau khi tạo recognizerIntent:
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        // giảm thời gian chờ silence sau khi bạn ngừng nói (ms)
+        recognizerIntent.putExtra("android.speech.extra.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 300);
+        // giảm thời gian tối thiểu cần nói để kết thúc (ms)
+        recognizerIntent.putExtra("android.speech.extra.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 150);
+
 
     }
 

@@ -1,6 +1,7 @@
 package com.example.bluetoothterminal;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -15,6 +16,7 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -52,9 +54,19 @@ public class BleManager {
     private UUID notifyServiceUuid;
     private UUID notifyCharUuid;
 
+    private static final int REQ_ENABLE_BT = 3001;
+    private final Context context;
+
+
+    public  static  final int get_REQ_ENABLE_BT()
+    {
+        return REQ_ENABLE_BT;
+    }
+
 
     // Private constructor
     private BleManager(Context ctx) {
+        this.context = ctx;
         BluetoothManager mgr = (BluetoothManager) ctx.getSystemService(Context.BLUETOOTH_SERVICE);
         adapter = mgr != null ? mgr.getAdapter() : null;
         scanner = adapter != null ? adapter.getBluetoothLeScanner() : null;
@@ -86,7 +98,8 @@ public class BleManager {
 
     /** Start BLE scan; suppress permission warnings (request externally) */
     @SuppressLint("MissingPermission")
-    public void startScan() {
+    public void startScan(Activity activity) {
+        if (!ensureBluetoothEnabled(activity)) return;
         if (scanning || adapter == null || !adapter.isEnabled() || scanner == null) return;
         scanning = true;
         handler.postDelayed(this::stopScan, SCAN_PERIOD_MS);
@@ -106,10 +119,11 @@ public class BleManager {
 
     /** Connect to device; suppress permission warnings (request externally) */
     @SuppressLint("MissingPermission")
-    public void connect(Context ctx, BluetoothDevice device) {
+    public void connect(Activity activity, BluetoothDevice device) {
+        if (!ensureBluetoothEnabled(activity)) return;
         lastDevice = device;
         disconnect();
-        gatt = device.connectGatt(ctx, false, gattCallback);
+        gatt = device.connectGatt(context, false, gattCallback);
         bluetoothGatt = gatt;
     }
 
@@ -283,6 +297,17 @@ public class BleManager {
     @SuppressLint("MissingPermission")
     public boolean requestMtu(int mtu) {
         return bluetoothGatt != null && bluetoothGatt.requestMtu(mtu);
+    }
+
+    @SuppressLint("MissingPermission")
+    private boolean ensureBluetoothEnabled(Activity activity) {
+        if (adapter == null) {  }
+        if (!adapter.isEnabled()) {
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            activity.startActivityForResult(enableIntent, REQ_ENABLE_BT);
+            return false;
+        }
+        return true;
     }
 
 

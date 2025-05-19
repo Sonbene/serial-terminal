@@ -19,7 +19,7 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@color/blue_800"
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-            app:title="Terminal"/>
+            app:title="WS1812B"/>
 
         <!-- 1. RecyclerView hiển thị lịch sử tin nhắn đã gửi -->
         <androidx.recyclerview.widget.RecyclerView
@@ -146,14 +146,6 @@
             android:layout_height="wrap_content"
             android:padding="8dp"
             android:gravity="center_vertical">
-
-            <ImageButton
-                android:id="@+id/btn_mic"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@android:drawable/ic_btn_speak_now"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Record"/>
 
             <EditText
                 android:id="@+id/et_message"

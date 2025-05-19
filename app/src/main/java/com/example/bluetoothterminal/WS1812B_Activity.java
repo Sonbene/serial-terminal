@@ -14,6 +14,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -47,7 +49,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class terminal_Activity extends AppCompatActivity
+public class WS1812B_Activity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String PREFS_NAME    = "macros_prefs";
@@ -55,7 +57,7 @@ public class terminal_Activity extends AppCompatActivity
 
     private DrawerLayout drawer;
     private RecyclerView rvMessages;
-    private ImageButton  btnMic, btnSend;
+    private ImageButton  btnSend;
     private EditText etMessage;
 
     // --- MỚI ---
@@ -71,11 +73,26 @@ public class terminal_Activity extends AppCompatActivity
 
     private static final int REQ_AUDIO_PERM = 200;
 
+    // 1) Thêm TextSpeaker để TTS hỏi ngược lại
+    private TextSpeaker speaker;
+
+    // 2) Trạng thái vòng lặp
+    private boolean isHotwordPhase = true;        // đang chờ “ê cu”
+    private boolean isRecordingPhase = false;     // đang chờ user trả lời
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable silenceTimeout;
+
+    // 3) Thời gian chờ silence (ms)
+    private static final long SILENCE_TIMEOUT_MS = 3000;
+    private static final String TAG = "WS1812B_Activity";
+
+    private static final long RETRY_DELAY_MS = 500;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.terminal);
+        setContentView(R.layout.ws2812b_layout);
 
         // --- Layout init ---
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -90,7 +107,6 @@ public class terminal_Activity extends AppCompatActivity
             SpeechRecognizerInit();
         }
 
-        btnMic     = findViewById(R.id.btn_mic);
         btnSend    = findViewById(R.id.btn_send);
         rvMessages = findViewById(R.id.rv_messages);
         drawer     = findViewById(R.id.drawer_layout);
@@ -117,12 +133,12 @@ public class terminal_Activity extends AppCompatActivity
         initBtnM4(); initBtnM5(); initBtnM6(); initBtnM7();
 
         // Mic & Send
-        btnMic.setOnClickListener(v -> onMicClicked());
         btnSend.setOnClickListener(v -> {
             btnSendMessageClick();
         });
 
-
+        // Khởi Text-to-Speech
+        speaker = new TextSpeaker(this);
 
         // BLE manager init + listener
         BleManager.init(getApplicationContext());
@@ -151,7 +167,7 @@ public class terminal_Activity extends AppCompatActivity
             @Override
             public void onMtuChanged(int mtu) {
                 runOnUiThread(() ->
-                        Toast.makeText(terminal_Activity.this,
+                        Toast.makeText(WS1812B_Activity.this,
                                 "MTU negotiated: " + mtu,
                                 Toast.LENGTH_SHORT).show()
                 );
@@ -172,9 +188,23 @@ public class terminal_Activity extends AppCompatActivity
             @Override public void onDataWritten(BluetoothGattCharacteristic characteristic) { }
         });
 
+        // Đăng ký receiver
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
         registerReceiver(screenOnReceiver, filter);
     }
+
+    private final BroadcastReceiver screenOnReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context ctx, Intent intent) {
+            if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
+                BluetoothDevice last = BleManager.get().getLastDevice();
+                if (!BleManager.get().isConnected() && last != null) {
+                    BleManager.get().connect(WS1812B_Activity.this, last);
+                }
+            }
+        }
+    };
+
 
     private void SpeechRecognizerInit() {
         speechManager = new SpeechRecognizerManager(
@@ -182,31 +212,172 @@ public class terminal_Activity extends AppCompatActivity
                 new SpeechRecognizerManager.Callback() {
                     @Override
                     public void onReady() {
+                        Log.d(TAG, "SpeechRecognizer onReady()");
 
                     }
+
                     @Override
                     public void onPartialResult(String text) {
-                        runOnUiThread(() -> etMessage.setText(text));
+                        Log.d(TAG, "onPartialResult: \"" + text + "\" | isHotwordPhase=" + isHotwordPhase + " | isRecordingPhase=" + isRecordingPhase);
+                        runOnUiThread(() -> {
+                            if (isHotwordPhase) {
+                                // nếu chưa detect hot-word
+                                String lower = text.toLowerCase(Locale.ROOT);
+                                if ((lower.contains("ê cu") || lower.contains("ecu"))) {
+                                    Log.d(TAG, "Hotword detected in partialResult");
+                                    enterRecordingPhase();
+                                }
+                            } else if (isRecordingPhase) {
+                                // cập nhật live text và reset timeout
+                                Log.d(TAG, "Updating live text & resetting timeout");
+                                etMessage.setText(text);
+                                resetSilenceTimeout();
+                            }
+                        });
                     }
+
                     @Override
                     public void onResult(String text) {
-                        runOnUiThread(() -> etMessage.setText(text));
+                        Log.d(TAG, "onResult: \"" + text + "\" | isRecordingPhase=" + isRecordingPhase);
+                        runOnUiThread(() -> {
+                            if (isRecordingPhase) {
+                                handler.removeCallbacks(silenceTimeout);
+                                etMessage.setText(text);
+                                Log.d(TAG, "Final result received, sending via BLE");
+                                sendViaBle(text);
+                                exitToHotwordPhase();
+                            }
+                            else{
+                                Log.d(TAG, "Result received but not in recording phase, ignoring");
+                                if(isHotwordPhase)
+                                {
+                                    safeStartListening();
+                                }
+                            }
+                        });
                     }
+
                     @Override
                     public void onError(String err) {
-                        runOnUiThread(() -> Toast.makeText(
-                                terminal_Activity.this, err, Toast.LENGTH_SHORT).show()
-                        );
+                        Log.d(TAG, "onError: \"" + err + "\" | isRecordingPhase=" + isRecordingPhase);
+                        runOnUiThread(() -> {
+                            // Nếu đang recording ⇒ báo lỗi rồi quay về hot-word
+                            if (isRecordingPhase) {
+                                Toast.makeText(WS1812B_Activity.this, err, Toast.LENGTH_SHORT).show();
+                                exitToHotwordPhase();
+                            } else {
+                                // lỗi ở phase chờ hot-word → restart listening
+                                Log.d(TAG, "Error during hotword phase, restarting listening");
+                                resetSpeechRecognizer();
+                            }
+                        });
                     }
+
                     @Override
                     public void onEndOfSpeech() {
-                        // nếu muốn xóa placeholder thì:
-                        // runOnUiThread(() -> { /* nothing */ });
+                        Log.d(TAG, "onEndOfSpeech() called");
                     }
                 },
-                false
+                /* forceOffline= */ false
         );
+//        Log.d(TAG, "SpeechRecognizerInit(): bắt đầu hotword listening");
+//        speechManager.startListening();
+
+        Log.d(TAG, "SpeechRecognizerInit(): done, scheduling first listen");
+        // bắt đầu bằng safeStartListening
+        handler.postDelayed(this::safeStartListening, 100);
     }
+
+    /** Chuyển từ phase chờ hotword → phase hỏi & ghi âm */
+    private void enterRecordingPhase() {
+        Log.d(TAG, "enterRecordingPhase() — TTS will ask then start listening");
+
+        speechManager.stopListening();
+
+        isHotwordPhase = false;
+        isRecordingPhase = false;       // tạm chưa record ngay
+        // 1) TTS hỏi
+        speaker.speak("Anh Lâm đẹp trai muốn gửi gì nhỉ?", () -> {
+            Log.d(TAG, "TTS onDone(), now UI hint & startListening()");
+            runOnUiThread(() -> {
+                // 2) Hiệu ứng UI
+                etMessage.setText("");
+                etMessage.setHint("Đang ghi âm…");
+                // 3) Bật mic và ghi âm
+                isRecordingPhase = true;
+                speechManager.startListening();
+                // 4) Khởi timeout im lặng
+                startSilenceTimeout();
+            });
+        });
+    }
+
+    /** Đặt hoặc reset timeout 3s khi recording */
+    private void startSilenceTimeout() {
+        if (silenceTimeout == null) {
+            silenceTimeout = () -> {
+                Log.d(TAG, "silenceTimeout triggered — no speech for 3s");
+                if (isRecordingPhase) {
+                    // dừng ghi âm
+                    speechManager.stopListening();
+                    // gửi text hiện tại (nếu có)
+                    String msg = etMessage.getText().toString().trim();
+                    Log.d(TAG, "silenceTimeout sending msg=\"" + msg + "\"");
+                    sendViaBle(msg);
+                    exitToHotwordPhase();
+                }
+            };
+        }
+        handler.removeCallbacks(silenceTimeout);
+        handler.postDelayed(silenceTimeout, SILENCE_TIMEOUT_MS);
+        Log.d(TAG, "startSilenceTimeout() scheduled in " + SILENCE_TIMEOUT_MS + "ms");
+    }
+
+    private void resetSilenceTimeout() {
+        Log.d(TAG, "resetSilenceTimeout()");
+        handler.removeCallbacks(silenceTimeout);
+        handler.postDelayed(silenceTimeout, SILENCE_TIMEOUT_MS);
+    }
+
+    /** Quay về phase chờ hotword, reset UI & restart mic */
+    private void exitToHotwordPhase() {
+        Log.d(TAG, "exitToHotwordPhase() — prepare for hotword");
+        isHotwordPhase = true;
+        isRecordingPhase = false;
+        handler.removeCallbacks(silenceTimeout);
+        etMessage.setHint("Nói “ê cu” để gửi");
+        etMessage.setText("");
+        // recreate recognizer & schedule safeStartListening()
+        speechManager.destroy();
+        SpeechRecognizerInit();
+    }
+
+
+    private void safeStartListening() {
+        try {
+            Log.d(TAG, "safeStartListening(): attempting startListening()");
+            speechManager.startListening();
+        } catch (RuntimeException e) {
+            Log.d(TAG, "safeStartListening(): failed, will retry in " + RETRY_DELAY_MS + "ms", e);
+            handler.postDelayed(this::safeStartListening, RETRY_DELAY_MS);
+        }
+    }
+
+    private void resetSpeechRecognizer() {
+        Log.d(TAG, "resetSpeechRecognizer() — destroy & re-init");
+        // 1) Hủy recognizer cũ
+        speechManager.destroy();
+        // 2) Tạo lại và auto startListening()
+        SpeechRecognizerInit();
+    }
+
+    /** Dừng cũ rồi start lại hot-word listening */
+    private void restartHotwordListening() {
+        Log.d(TAG, "restartHotwordListening()");
+        speechManager.stopListening();
+        speechManager.startListening();
+    }
+
 
     // --- Toolbar menu (connect/delete/more) ---
     @Override
@@ -232,7 +403,7 @@ public class terminal_Activity extends AppCompatActivity
 
     private void btnSendMessageClick()
     {
-        if(BleManager.get().isConnected() == true)
+        if(BleManager.get().isConnected())
         {
             String msg = ((EditText)findViewById(R.id.et_message)).getText().toString().trim();
             if (msg.isEmpty()) return;
@@ -392,6 +563,17 @@ public class terminal_Activity extends AppCompatActivity
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Nếu chưa kết nối và đã có thiết bị trước đó
+        if (!BleManager.get().isConnected() && BleManager.get().getLastDevice() != null) {
+            BleManager.get().connect(this, BleManager.get().getLastDevice());
+            updateStatusIcon(true); // nếu bạn muốn cập nhật icon ngay lập tức
+        }
+    }
+
+
 
     /**
      * Hiện dialog scan devices và gọi startScan()
@@ -549,34 +731,17 @@ public class terminal_Activity extends AppCompatActivity
         return getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
     }
 
-    protected void onDestroy() {
-        super.onDestroy();
-        speechManager.destroy();
-        unregisterReceiver(screenOnReceiver);
-    }
+    /** Hủy recognizer cũ và tạo mới, đồng thời start hotword listening */
+
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        // Nếu chưa kết nối và đã có thiết bị trước đó
-        if (!BleManager.get().isConnected() && BleManager.get().getLastDevice() != null) {
-            BleManager.get().connect(this, BleManager.get().getLastDevice());
-            updateStatusIcon(true); // nếu bạn muốn cập nhật icon ngay lập tức
-        }
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacksAndMessages(null);
+        speechManager.destroy();
+        speaker.destroy();
+        unregisterReceiver(screenOnReceiver);
     }
-
-    private final BroadcastReceiver screenOnReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context ctx, Intent intent) {
-            if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
-                BluetoothDevice last = BleManager.get().getLastDevice();
-                if (!BleManager.get().isConnected() && last != null) {
-                    BleManager.get().connect(terminal_Activity.this, last);
-                }
-            }
-        }
-    };
-
 
 
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -584,7 +749,7 @@ public class terminal_Activity extends AppCompatActivity
 
         Intent intent = null;
         int id = item.getItemId();
-        if (id == R.id.nav_ws2812b) intent = new Intent(this, WS1812B_Activity.class);
+        if (id == R.id.nav_terminal) intent = new Intent(this, terminal_Activity.class);
         // TODO: xử lý từng mục trong drawer
         if (intent != null) { startActivity(intent); finish(); }
         return true;

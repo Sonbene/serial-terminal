@@ -42,6 +42,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".WS1812B_Activity" android:exported="false" />
     </application>
 
 </manifest>
